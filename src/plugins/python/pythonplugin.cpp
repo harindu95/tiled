@@ -337,6 +337,7 @@ bool PythonMapFormat::supportsFile(const QString &fileName) const
     return ret;
 }
 
+
 QString PythonMapFormat::nameFilter() const
 {
     QString ret;
@@ -413,6 +414,175 @@ void PythonMapFormat::setPythonClass(PyObject *class_)
             mCapabilities |= Tiled::MapFormat::Read;
         }
     }
+}
+
+PythonTilesetFormat::PythonTilesetFormat(const QString &scriptFile,
+                                 PyObject *class_,
+                                 PythonPlugin &plugin)
+  : TilesetFormat(&plugin)
+  , mClass(nullptr)
+  , mPlugin(plugin)
+  , mScriptFile(scriptFile)
+{
+  setPythonClass(class_);
+}
+
+Tiled::SharedTileset PythonTilesetFormat::read(const QString &fileName)
+{
+  mError = QString();
+
+  mPlugin.log(tr("-- Using script %1 to read %2").arg(mScriptFile, fileName));
+
+  if (!PyObject_HasAttrString(mClass, "read")) {
+    mError = "Please define class that extends tiled.TilesetFormat and "
+      "has @classmethod read(cls, filename)";
+    return nullptr;
+  }
+  PyObject *pinst = PyObject_CallMethod(mClass, (char *)"read",
+                                        (char *)"(s)", fileName.toUtf8().constData());
+
+  Tiled::SharedTileset ret = nullptr;
+  if (!pinst) {
+    PySys_WriteStderr("** Uncaught exception in script **\n");
+  } else {
+    // _wrap_convert_py2c__Tiled__Map___star__(pinst, &ret);
+    //TODO: create a function to convert PyObject to SharedTileset
+    Py_DECREF(pinst);
+  }
+  handleError();
+
+  if (ret)
+    ret.data()->setProperty("__script__", mScriptFile);
+  return ret;
+}
+
+bool PythonTilesetFormat::write(const Tiled::Tileset &tileset, const QString &fileName)
+{
+  mError = QString();
+
+  mPlugin.log(tr("-- Using script %1 to write %2").arg(mScriptFile, fileName));
+
+  //TODO: convert PyObject to tileset.
+  // PyObject *pmap = _wrap_convert_c2py__Tiled__Map_const(map);
+  PyObject *ptileset = nullptr;
+  if (!ptileset)
+    return false;
+
+  PyObject *pinst = PyObject_CallMethod(mClass,
+                                        (char *)"write", (char *)"(Ns)",
+                                        ptileset,
+                                        fileName.toUtf8().constData());
+
+  if (!pinst) {
+    PySys_WriteStderr("** Uncaught exception in script **\n");
+    mError = tr("Uncaught exception in script. Please check console.");
+  } else {
+    bool ret = PyObject_IsTrue(pinst);
+    Py_DECREF(pinst);
+    if (!ret)
+      mError = tr("Script returned false. Please check console.");
+    return ret;
+  }
+
+  handleError();
+  return false;
+}
+
+bool PythonTilesetFormat::supportsFile(const QString &fileName) const
+{
+  if (!PyObject_HasAttrString(mClass, "supportsFile"))
+    return false;
+
+  PyObject *pinst = PyObject_CallMethod(mClass,
+                                        (char *)"supportsFile",
+                                        (char *)"(s)",
+                                        fileName.toUtf8().constData());
+  if (!pinst) {
+    handleError();
+    return false;
+  }
+
+  bool ret = PyObject_IsTrue(pinst);
+  Py_DECREF(pinst);
+  return ret;
+}
+
+QString PythonTilesetFormat::nameFilter() const
+{
+    QString ret;
+
+    // find fun
+    PyObject *pfun = PyObject_GetAttrString(mClass, "nameFilter");
+    if (!pfun || !PyCallable_Check(pfun)) {
+        PySys_WriteStderr("Plugin extension doesn't define \"nameFilter\"\n");
+        return ret;
+    }
+
+    // have fun
+    PyObject *pinst = PyEval_CallFunction(pfun, "()");
+    if (!pinst) {
+        PySys_WriteStderr("** Uncaught exception in script **\n");
+    } else {
+        ret = PyString_AsString(pinst);
+        Py_DECREF(pinst);
+    }
+    handleError();
+
+    Py_DECREF(pfun);
+
+    return ret;
+}
+
+QString PythonTilesetFormat::shortName() const
+{
+    QString ret;
+
+    // find fun
+    PyObject *pfun = PyObject_GetAttrString(mClass, "shortName");
+    if (!pfun || !PyCallable_Check(pfun)) {
+        PySys_WriteStderr("Plugin extension doesn't define \"shortName\". Falling back to \"nameFilter\"\n");
+        return nameFilter();
+    }
+
+    // have fun
+    PyObject *pinst = PyEval_CallFunction(pfun, "()");
+    if (!pinst) {
+        PySys_WriteStderr("** Uncaught exception in script **\n");
+    } else {
+        ret = PyString_AsString(pinst);
+        Py_DECREF(pinst);
+    }
+    handleError();
+
+    Py_DECREF(pfun);
+
+    return ret;
+}
+
+QString PythonTilesetFormat::errorString() const
+{
+  return mError;
+}
+
+void PythonTilesetFormat::setPythonClass(PyObject *class_)
+{
+  mClass = class_;
+  mCapabilities = NoCapability;
+
+  // @classmethod nameFilter(cls)
+  if (PyObject_HasAttrString(mClass, "nameFilter")) {
+    // @classmethod write(cls, map, filename)
+    if (PyObject_HasAttrString(mClass, "write")) {
+      mCapabilities |= Tiled::MapFormat::Write;
+    }
+
+    // @classmethod read(cls, filename)
+    // @classmethod supportsFile(cls, filename)
+    if (PyObject_HasAttrString(mClass, "read") &&
+        PyObject_HasAttrString(mClass, "supportsFile")) {
+      mCapabilities |= Tiled::MapFormat::Read;
+    }
+  }
 }
 
 } // namespace Python

@@ -28,6 +28,7 @@
 
 #include "logginginterface.h"
 #include "mapformat.h"
+#include "tilesetformat.h"
 #include "plugin.h"
 
 #include <QFileSystemWatcher>
@@ -140,6 +141,38 @@ private:
     QString mError;
     Capabilities mCapabilities;
 };
+
+ class PythonTilesetFormat : public Tiled::TilesetFormat , public PythonFormat
+ {
+   Q_OBJECT
+   Q_INTERFACES(Tiled::TilesetFormat)
+
+     public:
+   PythonTilesetFormat(const QString &scriptFile,
+                   PyObject *class_,
+                   PythonPlugin &plugin);
+
+   Capabilities capabilities() const override { return mCapabilities; }
+
+   Tiled::SharedTileset read(const QString &fileName) override;
+   bool supportsFile(const QString &fileName) const override;
+
+   bool write(const Tiled::Tileset &tileset, const QString &fileName) override;
+
+   QString nameFilter() const override;
+   QString shortName() const override;
+   QString errorString() const override;
+
+   PyObject *pythonClass() const { return mClass; }
+   void setPythonClass(PyObject *class_);
+
+ private:
+   PyObject *mClass;
+   PythonPlugin &mPlugin;
+   QString mScriptFile;
+   QString mError;
+   Capabilities mCapabilities;
+ };
 
 } // namespace Python
 
