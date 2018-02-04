@@ -78,7 +78,21 @@ void PythonPlugin::initialize()
         PyObject *pmod = PyImport_ImportModule("tiled");
         if (pmod) {
             PyObject *tiledPlugin = PyObject_GetAttrString(pmod, "Plugin");
+            
+            PyObject *tiledTileset = PyObject_GetAttrString(pmod, "Tileset");
             Py_DECREF(pmod);
+
+            pythonFormat = Format::MapFormat;
+
+            if(!tiledPlugin && tiledTileset){
+              tiledPlugin = tiledTileset;
+              pythonFormat = Format::TilesetFormat;
+            }
+
+            else if(tiledPlugin && tiledTileset){
+              log(Tiled::LoggingInterface::ERROR, "Both tiled.Plugin and tiled.Tileset is defined. Ignoring tiled.Tileset. Use a seperate module for tiled.Tileset\n");
+              Py_DECREF(tiledTileset);
+            }
 
             if (tiledPlugin) {
                 if (PyCallable_Check(tiledPlugin)) {
@@ -234,7 +248,7 @@ bool PythonPlugin::loadOrReloadModule(ScriptEntry &script)
     PyObject *pluginClass = findPluginSubclass(script.module);
 
     if (!pluginClass) {
-        PySys_WriteStderr("Extension of tiled.Plugin not defined in "
+        PySys_WriteStderr("Extension of tiled.Plugin or tiled.Tileset not defined in "
                           "script: %s\n", name.constData());
         return false;
     }
@@ -242,8 +256,12 @@ bool PythonPlugin::loadOrReloadModule(ScriptEntry &script)
     if (script.fileFormat) {
         script.fileFormat->setPythonClass(pluginClass);
     } else {
+      if(pythonFormat == Format::MapFormat)
         script.fileFormat = new PythonMapFormat(name, pluginClass, *this);
-        addObject(dynamic_cast<QObject*>(script.fileFormat));
+      else if(pythonFormat == Format::TilesetFormat)
+        script.fileFormat = new PythonTilesetFormat(name, pluginClass, *this);
+
+      addObject(dynamic_cast<QObject*>(script.fileFormat));
     }
 
     return true;
@@ -462,7 +480,7 @@ bool PythonTilesetFormat::write(const Tiled::Tileset &tileset, const QString &fi
 
   mPlugin.log(tr("-- Using script %1 to write %2").arg(mScriptFile, fileName));
 
-  //TODO: convert PyObject to tileset.
+  //TODO: convert Tileset to PyObject.
   // PyObject *pmap = _wrap_convert_c2py__Tiled__Map_const(map);
   PyObject *ptileset = nullptr;
   if (!ptileset)
