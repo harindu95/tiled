@@ -54,7 +54,7 @@ PythonPlugin::~PythonPlugin()
 {
     for (const ScriptEntry &script : mScripts) {
         Py_DECREF(script.module);
-        Py_DECREF(script.mapFormat->pythonClass());
+        Py_DECREF(script.fileFormat->pythonClass());
     }
 
     Py_XDECREF(mPluginClass);
@@ -160,8 +160,8 @@ void PythonPlugin::reloadModules()
         script.name = name;
 
         // Throw away any existing class reference
-        if (script.mapFormat) {
-            PyObject *pluginClass = script.mapFormat->pythonClass();
+        if (script.fileFormat) {
+            PyObject *pluginClass = script.fileFormat->pythonClass();
             Py_DECREF(pluginClass);
         }
 
@@ -174,9 +174,9 @@ void PythonPlugin::reloadModules()
                 PyErr_Clear();
             }
 
-            if (script.mapFormat) {
-                removeObject(script.mapFormat);
-                delete script.mapFormat;
+            if (script.fileFormat) {
+              removeObject(dynamic_cast<QObject*>(script.fileFormat));
+                delete script.fileFormat;
             }
         }
     }
@@ -239,11 +239,11 @@ bool PythonPlugin::loadOrReloadModule(ScriptEntry &script)
         return false;
     }
 
-    if (script.mapFormat) {
-        script.mapFormat->setPythonClass(pluginClass);
+    if (script.fileFormat) {
+        script.fileFormat->setPythonClass(pluginClass);
     } else {
-        script.mapFormat = new PythonMapFormat(name, pluginClass, *this);
-        addObject(script.mapFormat);
+        script.fileFormat = new PythonMapFormat(name, pluginClass, *this);
+        addObject(dynamic_cast<QObject*>(script.fileFormat));
     }
 
     return true;

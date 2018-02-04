@@ -42,17 +42,18 @@ class Map;
 namespace Python {
 
 class PythonMapFormat;
+class PythonFormat;
 
 struct ScriptEntry
 {
     ScriptEntry()
         : module(nullptr)
-        , mapFormat(nullptr)
+        , fileFormat(nullptr)
     {}
 
     QString name;
     PyObject *module;
-    PythonMapFormat *mapFormat;
+    PythonFormat *fileFormat;
 };
 
 class Q_DECL_EXPORT PythonPlugin : public Tiled::Plugin
@@ -99,7 +100,16 @@ public:
 };
 
 
-class PythonMapFormat : public Tiled::MapFormat
+ class PythonFormat
+ {
+   public:
+   virtual PyObject *pythonClass() const = 0;
+   virtual void setPythonClass(PyObject *class_) = 0;
+   virtual ~PythonFormat() = 0;
+ };
+
+
+ class PythonMapFormat : public Tiled::MapFormat, public PythonFormat
 {
     Q_OBJECT
     Q_INTERFACES(Tiled::MapFormat)
