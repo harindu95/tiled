@@ -64,6 +64,11 @@ class Q_DECL_EXPORT PythonPlugin : public Tiled::Plugin
     Q_PLUGIN_METADATA(IID "org.mapeditor.Plugin" FILE "plugin.json")
 
 public:
+    enum class Format{
+      MapFormat,
+      TilesetFormat
+    } ;
+
     PythonPlugin();
     ~PythonPlugin();
 
@@ -82,6 +87,7 @@ private:
     QString mScriptDir;
     QMap<QString,ScriptEntry> mScripts;
     PyObject *mPluginClass;
+    Format pythonFormat;
 
     QFileSystemWatcher mFileSystemWatcher;
     QTimer mReloadTimer;
