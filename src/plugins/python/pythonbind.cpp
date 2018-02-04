@@ -6827,6 +6827,7 @@ MOD_INIT(tiled)
         return MOD_ERROR;
     }
     PyModule_AddObject(m, (char *) "Plugin", (PyObject *) &PyPythonPythonScript_Type);
+    PyModule_AddObject(m, (char *) "TilesetFormat", (PyObject *) &PyPythonPythonScript_Type);
     submodule = inittiled_qt();
     if (submodule == NULL) {
         return MOD_ERROR;
