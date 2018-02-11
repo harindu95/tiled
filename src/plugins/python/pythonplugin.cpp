@@ -79,7 +79,7 @@ void PythonPlugin::initialize()
         if (pmod) {
             PyObject *tiledPlugin = PyObject_GetAttrString(pmod, "Plugin");
             
-            PyObject *tiledTileset = PyObject_GetAttrString(pmod, "Tileset");
+            PyObject *tiledTileset = PyObject_GetAttrString(pmod, "TilesetFormat");
             Py_DECREF(pmod);
 
             pythonFormat = Format::MapFormat;
@@ -90,7 +90,7 @@ void PythonPlugin::initialize()
             }
 
             else if(tiledPlugin && tiledTileset){
-              log(Tiled::LoggingInterface::ERROR, "Both tiled.Plugin and tiled.Tileset is defined. Ignoring tiled.Tileset. Use a seperate module for tiled.Tileset\n");
+              log(Tiled::LoggingInterface::ERROR, "Both tiled.Plugin and tiled.TilesetFormat is defined. Ignoring tiled.TilesetFormat. Use a seperate module for tiled.TilesetFormat\n");
               Py_DECREF(tiledTileset);
             }
 

@@ -293,6 +293,15 @@ cls_pp = mod.add_class('PythonScript',
     custom_name='Plugin')
 
 """
+ Additional class Tiled.TilesetFormat to inherit has the same
+ interface as PythonScript
+"""
+cls_pt = mod.add_class('PythonScript',
+    allow_subclassing=True,
+    foreign_cpp_namespace='Python',
+    custom_name='TilesetFormat')
+
+"""
  PythonPlugin implements LoggingInterface for messaging to Tiled
 """
 cls_logi = tiled.add_class('LoggingInterface', destructor_visibility='private')
