@@ -459,19 +459,19 @@ Tiled::SharedTileset PythonTilesetFormat::read(const QString &fileName)
   PyObject *pinst = PyObject_CallMethod(mClass, (char *)"read",
                                         (char *)"(s)", fileName.toUtf8().constData());
 
-  Tiled::SharedTileset ret = nullptr;
+  Tiled::Tileset* ret = nullptr;
   if (!pinst) {
     PySys_WriteStderr("** Uncaught exception in script **\n");
   } else {
-    // _wrap_convert_py2c__Tiled__Map___star__(pinst, &ret);
-    //TODO: create a function to convert PyObject to SharedTileset
+    _wrap_convert_py2c__Tiled__Tileset___star__(pinst,&ret);
     Py_DECREF(pinst);
   }
   handleError();
 
   if (ret)
-    ret.data()->setProperty("__script__", mScriptFile);
-  return ret;
+    ret->setProperty("__script__", mScriptFile);
+  // return QSharedPointer<Tiled::Tileset>(ret);
+  return Tiled::SharedTileset(ret);
 }
 
 bool PythonTilesetFormat::write(const Tiled::Tileset &tileset, const QString &fileName)
@@ -480,8 +480,8 @@ bool PythonTilesetFormat::write(const Tiled::Tileset &tileset, const QString &fi
 
   mPlugin.log(tr("-- Using script %1 to write %2").arg(mScriptFile, fileName));
 
-  //TODO: convert Tileset to PyObject.
-  // PyObject *pmap = _wrap_convert_c2py__Tiled__Map_const(map);
+  PyObject *pmap = _wrap_convert_c2py__Tiled__Tileset_const(&tileset);
+  
   PyObject *ptileset = nullptr;
   if (!ptileset)
     return false;

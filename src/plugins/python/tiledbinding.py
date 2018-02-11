@@ -296,7 +296,8 @@ cls_pp = mod.add_class('PythonScript',
  Additional class Tiled.TilesetFormat to inherit has the same
  interface as PythonScript
 """
-cls_pt = mod.add_class('PythonScript',
+
+cls_pt = mod.add_class('PythonTilesetFormatScript',
     allow_subclassing=True,
     foreign_cpp_namespace='Python',
     custom_name='TilesetFormat')
@@ -343,6 +344,14 @@ PyObject* _wrap_convert_c2py__Tiled__LoggingInterface(Tiled::LoggingInterface *c
         sink)
     mod.generate_c_to_python_type_converter(
         utils.eval_retval("const Tiled::Map"),
+        sink)
+
+    # generate methods for convertion of Tiled::Tileset
+    mod.generate_python_to_c_type_converter(
+        utils.eval_retval(retval('Tiled::Tileset*',caller_owns_return=True)),
+        sink)
+    mod.generate_c_to_python_type_converter(
+        utils.eval_retval("const Tiled::Tileset"),
         sink)
 
     print >>fh, sink.flush()

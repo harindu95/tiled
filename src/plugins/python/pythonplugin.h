@@ -107,6 +107,17 @@ public:
 };
 
 
+// Class exposed for Tileset
+ class PythonTilesetFormatScript {
+ public:
+   // perhaps provide default that throws NotImplementedError
+   Tiled::SharedTileset read(const QString &fileName);
+   bool supportsFile(const QString &fileName) const;
+   bool write(const Tiled::Tileset &tileset, const QString &fileName);
+   QString nameFilter() const;
+
+ };
+
  class PythonFormat
  {
    public:
@@ -186,3 +197,5 @@ PyMODINIT_FUNC inittiled(void);
 extern int _wrap_convert_py2c__Tiled__Map___star__(PyObject *obj, Tiled::Map * *address);
 extern PyObject* _wrap_convert_c2py__Tiled__Map_const(Tiled::Map const *cvalue);
 extern PyObject* _wrap_convert_c2py__Tiled__LoggingInterface(Tiled::LoggingInterface *cvalue);
+extern int _wrap_convert_py2c__Tiled__Tileset___star__(PyObject *value, Tiled::Tileset * *address);
+extern PyObject* _wrap_convert_c2py__Tiled__Tileset_const(Tiled::Tileset const *cvalue);
